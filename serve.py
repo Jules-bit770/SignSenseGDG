@@ -112,13 +112,7 @@ class SignSenseHandler(SimpleHTTPRequestHandler):
                 "url": "/SignSense/Main%20files/dynamic_signs/" + quote(video.name),
                 "modified": int(video.stat().st_mtime),
             } for video in sorted(DYNAMIC_SIGNS_DIR.glob("*.mp4"))]
-            payload = json.dumps({"videos": videos}).encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(payload)))
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
-            self.wfile.write(payload)
+            self.respond(200, {"videos": videos})
             return
         if self.path in ("/", "/index.html"):
             self.send_response(302)

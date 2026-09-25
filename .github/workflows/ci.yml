@@ -1,0 +1,110 @@
+name: CI Quality Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-validate:
+    name: Code Syntax & Static Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile serve.py test_letters.py tests/test_server.py
+
+      - name: Validate JavaScript syntax
+        run: |
+          node --check "SignSense/Main files/exercise.js"
+          node --check "SignSense/Main files/gesture_math.js"
+          node --check "SignSense/Main files/progress.js"
+          node --check "SignSense/Main files/map.js"
+          node --check "SignSense/Main files/letters.js"
+
+  unit-and-functional-tests:
+    name: Unit & Functional Tests (Python ${{ matrix.python-version }}, Node ${{ matrix.node-version }})
+    needs: lint-and-validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+        node-version: ['20', '22']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Run Python unit and functional tests
+        run: |
+          python -m unittest discover -s tests -v
+
+      - name: Run JavaScript unit tests
+        run: |
+          node --test tests/*.test.mjs
+
+  smoke-test:
+    name: Server Launch & Endpoints Smoke Test
+    needs: unit-and-functional-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Start server in background
+        run: |
+          python serve.py &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          sleep 2
+
+      - name: Verify HTTP endpoints
+        run: |
+          REDIRECT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/)
+          test "$REDIRECT_STATUS" = "302" || (echo "Expected 302, got $REDIRECT_STATUS" && exit 1)
+
+          SIGNS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/api/dynamic-signs)
+          test "$SIGNS_STATUS" = "200" || (echo "Expected 200, got $SIGNS_STATUS" && exit 1)
+
+          CSS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:8000/SignSense/Main%20files/ui.css")
+          test "$CSS_STATUS" = "200" || (echo "Expected 200, got $CSS_STATUS" && exit 1)
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            kill $SERVER_PID 2>/dev/null || true
+          fi

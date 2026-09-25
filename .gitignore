@@ -1,0 +1,35 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments & Dependencies
+.venv/
+venv/
+env/
+node_modules/
+
+# Test artifacts & caches
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+playwright-report/
+*-preview.png
+
+# Secrets, environment variables & credentials
+.env
+.env.*
+*.pem
+*.key
+*.cert
+secrets/
+credentials.json
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.bak
