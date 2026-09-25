@@ -1,55 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
-
-:root { 
-    --accent-color: #4CAF50;
-    --base-color: #f5f5f5;
-    --text-color: #333;
-    --input-color: #fff;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-}
-
-html {
-    font-family: 'Poppins', sans-serif;
-    font-size: 16px;
-    color: var(--text-color);
-    text-align: center;
-}
-
-body { 
-    min-height: 100vh;
-    background: url('./background.jpg') center center / cover no-repeat fixed;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.28);
-    z-index: 0;
-}
-
-body > * {
-    position: relative;
-    z-index: 1;
-}
-
-.input-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-    justify-content: center;
-}
-.input-row img {
-    width: 15px;
-    height: 15px;
+@import url('ui.css');
+body{min-height:100vh;display:grid;place-items:center;padding:30px 18px;background:url('background.jpg') center center / cover no-repeat fixed}
+.auth-card{width:100%;max-width:470px;background:white;border:1px solid var(--line);border-radius:28px;padding:42px;box-shadow:0 20px 80px #23352e0a}
+.auth-brand{display:block;text-decoration:none;font-weight:800;font-size:22px;color:var(--ink);margin-bottom:40px}
+.auth-brand>span{font-size:12px;color:var(--blue);margin-right:6px}
+.auth-brand i{color:var(--red);font-style:normal}
+.auth-brand em{color:#dcae18;font-style:normal}
+.auth-brand strong{color:var(--green)}
+h1{font-size:36px;margin:14px 0}
+p{font-size:14px;color:var(--muted)}
+form{margin-top:28px}
+.input-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.input-row:has(input){background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:0 15px}
+.input-row:focus-within{border-color:var(--blue)}
+.input-row img{width:17px;height:17px;opacity:.55}
+input{min-width:0;width:100%;border:0;background:transparent;padding:15px 0;font:inherit;color:var(--ink)}
+input::placeholder{color:var(--muted);opacity:1}
+input:focus{outline:none}
+button{width:100%;margin-top:8px;background:var(--blue);color:white;border:0;padding:15px;border-radius:12px;font-weight:700;box-shadow:0 4px 0 #2451bb}
+button:hover{transform:translateY(-2px)}
+#form-error{color:#ba352b;font-size:13px}
+a{font-weight:600}
+@media(max-width:500px){.auth-card{padding:28px}
+h1{font-size:31px}
 }

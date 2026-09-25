@@ -22,13 +22,13 @@ const START_MOTION = 0.018;
 const CONTINUE_MOTION = 0.006;
 const QUIET_FRAMES_TO_FINISH = 10;
 const MAX_GESTURE_FRAMES = 150;
-const MATCH_THRESHOLD = 50;
+const MATCH_THRESHOLD = 60;
 const GOOD_DTW_DISTANCE = 0.4;
 const BAD_DTW_DISTANCE = 2.0;
 const $ = id => document.getElementById(id);
 
 const query = new URLSearchParams(location.search);
-const exerciseNumber = Number(query.get('exercise')) || 1;
+const exerciseNumber = EXERCISES[Number(query.get('exercise'))] ? Number(query.get('exercise')) : 1;
 const signs = EXERCISES[exerciseNumber] || EXERCISES[1];
 const camera = $('camera');
 const reference = $('reference');
@@ -47,7 +47,12 @@ let cameraStream = null;
 let cameraLoopBusy = false;
 let cameraFrameCounter = 0;
 let matcherReady = false;
-let bestScores = {};
+let bestScores = SignSenseProgress.read()[exerciseNumber] || {};
+if (typeof bestScores !== 'object' || Array.isArray(bestScores)) bestScores = {};
+const firstUnachieved = signs.findIndex(sign => !(bestScores[sign] > MATCH_THRESHOLD));
+if (firstUnachieved >= 0) signIndex = firstUnachieved;
+const celebratedSigns = new Set();
+let celebrationTimer;
 
 let previousFrame = null;
 let preRoll = [];
@@ -345,13 +350,38 @@ function finishDetectedGesture() {
 
 function showCompletedScore(confidence) {
   const sign = signs[signIndex];
+  updateAchievement(confidence, true);
   $('score-label').textContent = `Last completed ${sign} attempt`;
   $('score').textContent = `${confidence}%`;
   $('bar').style.width = `${confidence}%`;
-  $('camera-state').textContent = confidence >= MATCH_THRESHOLD ? `Matched ${sign}: ${confidence}%` : `Not matched — try ${sign} again: ${confidence}%`;
+  $('camera-state').textContent = confidence > MATCH_THRESHOLD ? `Matched ${sign}: ${confidence}%` : `Not matched — try ${sign} again: ${confidence}%`;
   if (bestScores[sign] === undefined || confidence > bestScores[sign]) {
     bestScores[sign] = confidence;
+    SignSenseProgress.save(exerciseNumber, bestScores);
     renderSignList();
+  }
+}
+
+function updateAchievement(confidence, celebrate = false) {
+  const matched = confidence > MATCH_THRESHOLD;
+  $('score-card').classList.toggle('success', matched);
+  $('camera-panel').classList.toggle('success', matched);
+  $('confidence-meter').setAttribute('aria-valuenow', confidence || 0);
+  $('achievement-title').textContent = matched ? 'Sign achieved. Beautifully done!' : confidence == null ? "Give it a try. You've got this." : 'Every attempt is a step forward.';
+  $('achievement-message').textContent = matched ? 'A new connection, earned. Keep going when you\u2019re ready.' : confidence == null ? 'Watch the sign, copy the movement, then pause.' : 'Try matching the hand shape and movement in the reference.';
+  if (matched && celebrate && !celebratedSigns.has(signs[signIndex])) {
+    celebratedSigns.add(signs[signIndex]);
+    $('score-card').classList.add('celebrate');
+    const colours = ['#3269e8', '#218451', '#f7c948', '#e45c50'];
+    $('confetti').replaceChildren(...Array.from({length: 32}, (_, i) => {
+      const piece = document.createElement('i');
+      piece.style.setProperty('--x', `${Math.random() * 100}%`);
+      piece.style.setProperty('--c', colours[i % 4]);
+      piece.style.setProperty('--delay', `${Math.random() * .4}s`);
+      return piece;
+    }));
+    clearTimeout(celebrationTimer);
+    celebrationTimer = setTimeout(() => { $('confetti').replaceChildren(); $('score-card').classList.remove('celebrate'); }, 2300);
   }
 }
 
@@ -517,10 +547,11 @@ async function buildReferenceTemplate() {
 }
 
 function renderSignList() {
+  $('lesson-progress').textContent = `${signs.filter(sign => bestScores[sign] > MATCH_THRESHOLD).length} / ${signs.length} signs achieved`;
   $('items').innerHTML = signs.map((sign, index) => {
     const classes = ['item'];
     if (index === signIndex) classes.push('current');
-    if (bestScores[sign] >= MATCH_THRESHOLD) classes.push('done');
+    if (bestScores[sign] > MATCH_THRESHOLD) classes.push('done');
     const value = bestScores[sign] === undefined ? '—' : `${bestScores[sign]}%`;
     return `<div class="${classes.join(' ')}"><span>${sign}</span><b>${value}</b></div>`;
   }).join('');
@@ -529,7 +560,12 @@ function renderSignList() {
 async function showCurrentSign() {
   const sign = signs[signIndex];
   $('sign-title').textContent = `${sign} · ${signIndex + 1} of ${signs.length}`;
-  $('score-label').textContent = 'Last completed attempt';
+  clearTimeout(celebrationTimer);
+  $('confetti').replaceChildren();
+  $('score-card').classList.remove('celebrate');
+  updateAchievement(bestScores[sign]);
+  $('next-btn').textContent = signIndex === signs.length - 1 ? 'Back to islands \u2192' : 'Next sign \u2192';
+  $('score-label').textContent = 'Your best attempt';
   $('score').textContent = bestScores[sign] === undefined ? '—' : `${bestScores[sign]}%`;
   $('bar').style.width = `${bestScores[sign] || 0}%`;
   renderSignList();
@@ -582,7 +618,8 @@ $('replay-btn').addEventListener('click', () => {
   reference.play().catch(() => {});
 });
 $('next-btn').addEventListener('click', () => {
-  signIndex = (signIndex + 1) % signs.length;
+  if (signIndex === signs.length - 1) { location.href = 'exercise_map.html'; return; }
+  signIndex++;
   showCurrentSign();
 });
 

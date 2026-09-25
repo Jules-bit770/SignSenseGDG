@@ -6,25 +6,25 @@
         <title>SignSense Login</title> 
         <link rel="stylesheet" href="signup.css">
     </head>
-    <body>
-        <h1>SignSense Login</h1>
-        <p class="sub">Login to access your SignSense account.</p>
+    <body><main class="auth-card"><a class="auth-brand" href="index.html"><span aria-hidden="true">&#9679; <i>&#9679;</i> <em>&#9679;</em> <strong>&#9679;</strong></span> SignSense</a><div class="eyebrow">LEARN. CONNECT. BELONG.</div>
+        <h1>Good to see you again.</h1>
+        <p class="sub">A little practice today. A stronger connection tomorrow.</p>
         <form id="signinForm">
             <div class="input-row">
                 <img src="man.png" alt="Man Icon">
-                <input type="text" name="username" id="username-input" placeholder="Username" required>
+                <input type="text" name="username" id="username-input" aria-label="Username" autocomplete="username" placeholder="Username" required>
             </div>
             <div class="input-row">
                 <img src="lock.png" alt="Lock Icon">
-                <input type="password" name="password" id="password-input" placeholder="Password" required>
+                <input type="password" name="password" id="password-input" aria-label="Password" autocomplete="current-password" placeholder="Password" required>
             </div>
             <div class="input-row">
-                <button type="submit">Login</button>
+                <button type="submit">Continue to your islands &rarr;</button>
             </div>   
-        </form>
+        </form><p id="form-error" role="alert"></p>
         <p>Don't have an account? <a href="signup.html">Sign up here</a></p>
 
-        <script>
+        </main><script>
             document.getElementById('signinForm').addEventListener('submit', function(e) {
                 e.preventDefault();
 
@@ -35,9 +35,9 @@
 
                 if (users[username] && users[username].password === password) {
                     sessionStorage.setItem('loggedInUser', username);
-                    window.location.href = 'mainmenu.html';
+                    window.location.href = 'exercise_map.html';
                 } else {
-                    alert('Invalid username or password. Not authorized.');
+                    document.getElementById('form-error').textContent = 'That username or password does not match. Please try again.';
                 }
             });
         </script>
