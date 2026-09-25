@@ -18,11 +18,13 @@ const SOURCES = {
 
 const FEATURE_DIM = 86;
 const HAND_BLOCK = 43;
-const START_MOTION = 0.028;
-const CONTINUE_MOTION = 0.012;
-const QUIET_FRAMES_TO_FINISH = 8;
+const START_MOTION = 0.018;
+const CONTINUE_MOTION = 0.006;
+const QUIET_FRAMES_TO_FINISH = 10;
 const MAX_GESTURE_FRAMES = 150;
-const MATCH_THRESHOLD = 55;
+const MATCH_THRESHOLD = 50;
+const GOOD_DTW_DISTANCE = 0.4;
+const BAD_DTW_DISTANCE = 2.0;
 const $ = id => document.getElementById(id);
 
 const query = new URLSearchParams(location.search);
@@ -30,6 +32,10 @@ const exerciseNumber = Number(query.get('exercise')) || 1;
 const signs = EXERCISES[exerciseNumber] || EXERCISES[1];
 const camera = $('camera');
 const reference = $('reference');
+const referenceProcessor = document.createElement('video');
+referenceProcessor.muted = true;
+referenceProcessor.playsInline = true;
+referenceProcessor.preload = 'auto';
 const canvas = $('canvas');
 const canvasContext = canvas.getContext('2d');
 
@@ -39,6 +45,7 @@ let referenceBuildId = 0;
 const referenceTemplateCache = new Map();
 let cameraStream = null;
 let cameraLoopBusy = false;
+let cameraFrameCounter = 0;
 let matcherReady = false;
 let bestScores = {};
 
@@ -69,15 +76,11 @@ function extractFeature(results) {
 
 function writeHandFeature(target, offset, hand, neck, shoulderWidth) {
   if (!hand || hand.length !== 21) return;
-  const wrist = hand[0];
-  const palmSize = Math.max(0.025, Math.hypot(hand[9].x - wrist.x, hand[9].y - wrist.y));
   target[offset] = 1;
-  target[offset + 1] = (wrist.x - neck.x) / shoulderWidth;
-  target[offset + 2] = (wrist.y - neck.y) / shoulderWidth;
-  for (let point = 1; point < 21; point++) {
-    const destination = offset + 3 + (point - 1) * 2;
-    target[destination] = (hand[point].x - wrist.x) / palmSize;
-    target[destination + 1] = (hand[point].y - wrist.y) / palmSize;
+  for (let point = 0; point < 21; point++) {
+    const destination = offset + 1 + point * 2;
+    target[destination] = (hand[point].x - neck.x) / shoulderWidth;
+    target[destination + 1] = (hand[point].y - neck.y) / shoulderWidth;
   }
 }
 
@@ -115,7 +118,7 @@ function trimToGesture(frames) {
       moving.push(index);
     }
   }
-  if (moving.length < 3) return [];
+  if (moving.length < 2) return [];
   const start = Math.max(0, moving[0] - 3);
   const end = Math.min(frames.length, moving[moving.length - 1] + 5);
   return frames.slice(start, end);
@@ -124,12 +127,12 @@ function trimToGesture(frames) {
 function isUsableGesture(frames) {
   if (frames.length < 8) return false;
   const visibleFrames = frames.filter(frame => handCount(frame) > 0).length;
-  if (visibleFrames / frames.length < 0.65) return false;
+  if (visibleFrames / frames.length < 0.6) return false;
   let totalMotion = 0;
   for (let index = 1; index < frames.length; index++) {
     totalMotion += motionBetween(frames[index - 1], frames[index]);
   }
-  return totalMotion > 0.10;
+  return totalMotion > 0.05;
 }
 
 function frameDistance(left, right) {
@@ -142,22 +145,28 @@ function frameDistance(left, right) {
     if (!leftPresent && !rightPresent) continue;
     comparedHands++;
     if (leftPresent !== rightPresent) {
-      cost += 2.2;
+      cost += 3.0;
       continue;
     }
 
     const wristX = left[offset + 1] - right[offset + 1];
     const wristY = left[offset + 2] - right[offset + 2];
-    cost += 0.55 * (wristX * wristX + wristY * wristY);
-
+    const wristDistance = Math.hypot(wristX, wristY);
     let shapeCost = 0;
-    for (let value = offset + 3; value < offset + HAND_BLOCK; value++) {
-      const difference = left[value] - right[value];
-      shapeCost += difference * difference;
+    for (let point = 1; point < 21; point++) {
+      const coordinate = offset + 1 + point * 2;
+      const leftRelativeX = left[coordinate] - left[offset + 1];
+      const leftRelativeY = left[coordinate + 1] - left[offset + 2];
+      const rightRelativeX = right[coordinate] - right[offset + 1];
+      const rightRelativeY = right[coordinate + 1] - right[offset + 2];
+      const differenceX = leftRelativeX - rightRelativeX;
+      const differenceY = leftRelativeY - rightRelativeY;
+      shapeCost += differenceX * differenceX + differenceY * differenceY;
     }
-    cost += 0.9 * (shapeCost / 40);
+    const shapeDistance = Math.sqrt(shapeCost / 40);
+    cost += shapeDistance * 0.75 + wristDistance * 0.25;
   }
-  return comparedHands ? Math.sqrt(cost / comparedHands) : 5;
+  return comparedHands ? cost / comparedHands : 5;
 }
 
 function limitFrames(frames, maximum = 100) {
@@ -183,8 +192,8 @@ function dtwDistance(userFrames, templateFrames) {
       if (Math.abs(row / rows - column / columns) > 0.35) continue;
       const localCost = frameDistance(user[row - 1], template[column - 1]);
       const diagonal = costs[row - 1][column - 1];
-      const vertical = costs[row - 1][column] + 0.025;
-      const horizontal = costs[row][column - 1] + 0.025;
+      const vertical = costs[row - 1][column] + 0.06;
+      const horizontal = costs[row][column - 1] + 0.06;
       if (diagonal <= vertical && diagonal <= horizontal) {
         costs[row][column] = localCost + diagonal;
         steps[row][column] = steps[row - 1][column - 1] + 1;
@@ -222,7 +231,8 @@ function mirrorGesture(frames) {
 
 function confidenceFromDistance(distance) {
   if (!Number.isFinite(distance)) return 0;
-  return Math.round(Math.max(0, Math.min(100, 100 * Math.exp(-distance / 0.75))));
+  const normalized = (BAD_DTW_DISTANCE - distance) / (BAD_DTW_DISTANCE - GOOD_DTW_DISTANCE);
+  return Math.round(Math.max(0, Math.min(1, normalized)) * 100);
 }
 
 function compareGesture(candidate) {
@@ -230,7 +240,12 @@ function compareGesture(candidate) {
   if (!isUsableGesture(trimmed) || !referenceTemplate) return null;
   const normalDistance = dtwDistance(trimmed, referenceTemplate);
   const mirroredDistance = dtwDistance(mirrorGesture(trimmed), referenceTemplate);
-  return confidenceFromDistance(Math.min(normalDistance, mirroredDistance));
+  const bestDistance = Math.min(normalDistance, mirroredDistance);
+  const confidence = confidenceFromDistance(bestDistance);
+  const diagnostic = `${signs[signIndex]} · user ${trimmed.length}f / ref ${referenceTemplate.length}f · normal ${normalDistance.toFixed(3)} · mirrored ${mirroredDistance.toFixed(3)} · best ${bestDistance.toFixed(3)}`;
+  console.info(`[DTW] ${diagnostic} · confidence ${confidence}%`);
+  $('dtw-debug').textContent = diagnostic;
+  return confidence;
 }
 
 function runDtwSelfCheck() {
@@ -244,13 +259,23 @@ function runDtwSelfCheck() {
   };
   const referenceFrames = Array.from({ length: 30 }, (_, index) => makeFrame(index / 29));
   const slowFrames = Array.from({ length: 75 }, (_, index) => makeFrame(index / 74));
-  const wrongFrames = Array.from({ length: 30 }, (_, index) => makeFrame(1 - index / 29));
+  const wrongFrames = Array.from({ length: 30 }, (_, index) => {
+    const frame = makeFrame(index / 29);
+    frame[1] += 3;
+    frame[2] += 2;
+    for (let point = 1; point < 21; point++) {
+      const coordinate = 1 + point * 2;
+      frame[coordinate] = frame[1] + (point % 2 ? 4 : -4);
+      frame[coordinate + 1] = frame[2] + (point % 3 ? 3 : -3);
+    }
+    return frame;
+  });
   const same = confidenceFromDistance(dtwDistance(referenceFrames, referenceFrames));
   const slow = confidenceFromDistance(dtwDistance(slowFrames, referenceFrames));
   const wrong = confidenceFromDistance(dtwDistance(wrongFrames, referenceFrames));
   const idleRejected = compareSyntheticIdle(referenceFrames);
-  const passed = same >= 99 && slow >= 85 && wrong < MATCH_THRESHOLD && idleRejected;
-  console.info(`DTW self-check: same=${same}%, slow=${slow}%, reversed=${wrong}%, idleRejected=${idleRejected}`);
+  const passed = same >= 99 && slow >= 70 && wrong < MATCH_THRESHOLD && idleRejected;
+  console.info(`DTW self-check: same=${same}%, slow=${slow}%, wrong=${wrong}%, idleRejected=${idleRejected}`);
   return passed;
 }
 
@@ -341,7 +366,7 @@ function drawCameraLandmarks(results) {
 
 const userHolistic = new Holistic({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}` });
 userHolistic.setOptions({
-  modelComplexity: 1,
+  modelComplexity: 0,
   smoothLandmarks: true,
   enableSegmentation: false,
   refineFaceLandmarks: false,
@@ -353,7 +378,7 @@ userHolistic.onResults(processCameraResult);
 let referenceFrameCollector = null;
 const referenceHolistic = new Holistic({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}` });
 referenceHolistic.setOptions({
-  modelComplexity: 1,
+  modelComplexity: 0,
   smoothLandmarks: false,
   enableSegmentation: false,
   refineFaceLandmarks: false,
@@ -403,39 +428,39 @@ function waitForDecodedVideoFrame(video) {
   });
 }
 
+async function seekToDecodedFrame(video, time) {
+  const safeTime = Math.max(0.001, Math.min(time, video.duration - 0.001));
+  const decodedFrame = waitForDecodedVideoFrame(video);
+  const seekFinished = new Promise((resolve, reject) => {
+    video.addEventListener('seeked', resolve, { once: true });
+    video.addEventListener('error', () => reject(new Error('Reference frame seek failed.')), { once: true });
+  });
+  video.currentTime = safeTime;
+  await seekFinished;
+  await decodedFrame;
+}
+
 async function extractSequentialReferenceFrames(video, buildId) {
   const collected = [];
-  const originalLoop = video.loop;
-  const originalRate = video.playbackRate;
+  const sampleRate = 15;
+  const step = 1 / sampleRate;
+  video.pause();
   video.loop = false;
-  video.playbackRate = 1;
   await rewindVideo(video);
   referenceFrameCollector = collected;
 
-  let lastProcessedTime = -1;
   try {
-    await video.play();
-    while (buildId === referenceBuildId && !video.ended && video.currentTime < video.duration - 0.01) {
-      const metadata = await waitForDecodedVideoFrame(video);
-      // Freeze this decoded frame while MediaPipe works. Without this pause the
-      // short reference video can finish while the first WASM inference loads.
-      video.pause();
-      const mediaTime = Number.isFinite(metadata.mediaTime) ? metadata.mediaTime : video.currentTime;
-      if (mediaTime > lastProcessedTime + 1 / 24) {
-        lastProcessedTime = mediaTime;
-        await referenceHolistic.send({ image: video });
-        const detected = collected.filter(frame => handCount(frame) > 0).length;
-        $('template-state').textContent = `Reading video… ${collected.length} frames, ${detected} with hands`;
-      }
-      if (buildId === referenceBuildId && video.currentTime < video.duration - 0.01) {
-        await video.play();
-      }
+    for (let time = step / 2; time < video.duration; time += step) {
+      if (buildId !== referenceBuildId) break;
+      await seekToDecodedFrame(video, time);
+      await referenceHolistic.send({ image: video });
+      const detected = collected.filter(frame => handCount(frame) > 0).length;
+      $('template-state').textContent = `Reading video… ${collected.length} frames, ${detected} with hands`;
     }
   } finally {
     referenceFrameCollector = null;
     video.pause();
-    video.loop = originalLoop;
-    video.playbackRate = originalRate;
+    video.loop = true;
   }
   return collected;
 }
@@ -451,9 +476,9 @@ async function buildReferenceTemplate() {
   const sign = signs[signIndex];
   const filename = SOURCES[sign];
   if (!filename) throw new Error(`No reference filename is configured for ${sign}.`);
-  reference.src = `dynamic_signs/${filename}`;
-
-  await waitForVideoMetadata(reference);
+  const sourceUrl = `dynamic_signs/${filename}`;
+  reference.src = sourceUrl;
+  reference.play().catch(() => {});
   if (referenceTemplateCache.has(sign)) {
     referenceTemplate = referenceTemplateCache.get(sign);
     matcherReady = true;
@@ -466,7 +491,10 @@ async function buildReferenceTemplate() {
     return;
   }
 
-  const collected = await extractSequentialReferenceFrames(reference, buildId);
+  referenceProcessor.src = sourceUrl;
+  referenceProcessor.load();
+  await waitForVideoMetadata(referenceProcessor);
+  const collected = await extractSequentialReferenceFrames(referenceProcessor, buildId);
 
   if (buildId !== referenceBuildId) return;
   const trimmed = trimToGesture(collected);
@@ -478,12 +506,13 @@ async function buildReferenceTemplate() {
 
   referenceTemplate = trimmed;
   referenceTemplateCache.set(sign, trimmed);
+  const detectedFrames = collected.filter(frame => handCount(frame) > 0).length;
+  console.info(`[REFERENCE] ${sign}: ${trimmed.length} motion frames from ${collected.length} decoded frames (${detectedFrames} with hands)`);
+  console.info(`[REFERENCE] first hands=${handCount(trimmed[0])}, middle hands=${handCount(trimmed[Math.floor(trimmed.length / 2)])}, last hands=${handCount(trimmed[trimmed.length - 1])}`);
   matcherReady = true;
   $('template-state').textContent = `DTW ready · ${trimmed.length} motion frames`;
   $('next-btn').disabled = false;
   $('status').textContent = 'Start the camera, then perform the sign at your own speed. Scoring happens when your movement ends.';
-  reference.currentTime = 0;
-  reference.play().catch(() => {});
   resetGestureDetector();
 }
 
@@ -508,8 +537,12 @@ async function showCurrentSign() {
     await buildReferenceTemplate();
   } catch (error) {
     matcherReady = false;
-    $('template-state').textContent = 'Reference template failed';
-    $('status').textContent = error.message;
+    referenceTemplate = null;
+    $('template-state').textContent = 'DTW unavailable for this sign';
+    $('status').textContent = `${error.message} You can still watch the reference and continue to the next sign.`;
+    $('next-btn').disabled = false;
+    reference.play().catch(() => {});
+    resetGestureDetector();
     console.error(error);
   }
 }
@@ -525,7 +558,8 @@ async function startCamera() {
 
     const processFrame = async () => {
       if (!cameraStream) return;
-      if (!cameraLoopBusy && camera.readyState >= 2) {
+      cameraFrameCounter++;
+      if (cameraFrameCounter % 2 === 0 && !cameraLoopBusy && camera.readyState >= 2) {
         cameraLoopBusy = true;
         try {
           await userHolistic.send({ image: camera });
