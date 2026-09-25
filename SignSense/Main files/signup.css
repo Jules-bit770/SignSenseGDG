@@ -21,14 +21,25 @@ html {
 
 body { 
     min-height: 100vh;
-    background-image: url('background.jpg');
-    background-size: cover;
-    background-position: right;
+    background: url('./background.jpg') center center / cover no-repeat fixed;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.28);
+    z-index: 0;
+}
+
+body > * {
+    position: relative;
+    z-index: 1;
 }
 
 .input-row {

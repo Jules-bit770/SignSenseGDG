@@ -2,7 +2,7 @@ body {
     min-height: 100vh;
     background-image: url('background.jpg');
     background-size: cover;
-    background-position: middle top;
+    background-position: center top;
     overflow: hidden;
     display: flex;
     flex-direction: column;
