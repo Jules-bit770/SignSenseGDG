@@ -21,3 +21,17 @@ if (achieved) {
  document.getElementById('continue-description').textContent = next ? 'Your progress is right here. Ready for your next connection?' : '36 signs achieved. Keep your confidence growing with a little practice.';
 }
 document.getElementById('signout').addEventListener('click', () => sessionStorage.removeItem('loggedInUser'));
+
+
+// Letter practice has its own progress so existing word scores stay unchanged.
+fetch('/api/letters').then(async response => {
+  if (!response.ok) throw new Error('Letter service unavailable');
+  return response.json();
+}).then(({ letters }) => {
+  const saved = progress.letters || {};
+  const count = letters.filter(item => saved[item.letter] === true).length;
+  document.getElementById('letter-count').textContent = `${count} / ${letters.length} letters`;
+  document.getElementById('letter-island').classList.toggle('done', letters.length > 0 && count === letters.length);
+}).catch(() => {
+  document.getElementById('letter-count').textContent = 'Explore letters';
+});

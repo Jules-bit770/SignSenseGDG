@@ -1,0 +1,7 @@
+.map{height:880px}
+.island.one{top:650px}
+.island.two{top:460px}
+.island.three{top:268px}
+.island.letters{top:78px;left:66%;--island:#7450a3}
+.island.letters .symbol{font-weight:800;letter-spacing:-2px}
+@media(max-width:650px){.map{height:880px}.island.letters{left:66%}}

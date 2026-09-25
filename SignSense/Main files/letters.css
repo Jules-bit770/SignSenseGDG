@@ -1,0 +1,10 @@
+.letter-reference{height:auto;aspect-ratio:4/3;background:#f1f4ee;display:grid;place-items:center;padding:12px}
+.letter-reference img{width:100%;height:100%;min-height:0;object-fit:contain;border-radius:8px}
+.letter-reference img[hidden],[hidden]{display:none!important}
+.capture-overlay{position:absolute;inset:0;display:grid;place-items:center;background:#14261f55;color:white;font-size:clamp(30px,5vw,60px);font-weight:800;text-align:center;padding:24px}
+.letter-navigation{display:flex;justify-content:space-between;gap:16px;margin:24px 0}
+.practice-note{background:#fffffff0;border-radius:12px;padding:16px;color:var(--muted);font-size:13px}
+.score[data-status="different_sign"]{border-color:var(--red);background:#fff4f1}
+.score[data-status="uncertain"]{border-color:#d9b646;background:#fffbed}
+.score h2{margin:8px 0}.score p:last-child{margin-bottom:0}
+@media(max-width:650px){.letter-navigation{flex-wrap:wrap}.letter-navigation .btn{flex:1}.panel-head{gap:12px}}
