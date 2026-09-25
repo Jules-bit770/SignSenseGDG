@@ -8,6 +8,7 @@
   if (typeof scores !== 'object' || Array.isArray(scores)) scores = {};
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const current = () => deck[index];
+  let celebrationTimer;
 
   function shuffle(items) {
     const result = [...items];
@@ -27,12 +28,37 @@
   }
 
   function feedback(title, message, status = '') {
+    clearTimeout(celebrationTimer);
+    $('achievement-confetti').replaceChildren();
+    $('result-card').classList.remove('achievement-pop');
+    const matched = status === 'match';
+    $('achievement-medal').hidden = !matched;
+    $('camera-achievement').hidden = !matched;
+    $('achievement-letter').textContent = matched ? current().letter : '';
+    $('camera-achievement').textContent = matched ? `✓ Well done! You signed ${current().letter}` : '';
+    $('next-button').classList.toggle('achievement-next', matched);
     $('result-title').textContent = title;
     $('feedback').textContent = message;
     $('result-card').dataset.status = status;
     $('result-card').classList.toggle('success', status === 'match');
     $('camera-panel').classList.toggle('success', status === 'match');
-    $('result-label').textContent = status === 'match' ? 'LETTER RECOGNISED' : status === 'different_sign' ? 'GIVE IT ANOTHER TRY' : status === 'uncertain' ? 'LET’S TRY AGAIN' : 'LETTER PRACTICE';
+    $('result-label').textContent = matched ? '✦ LETTER ACHIEVED ✦' : status === 'different_sign' ? 'GIVE IT ANOTHER TRY' : status === 'uncertain' ? 'LET’S TRY AGAIN' : 'LETTER PRACTICE';
+    if (matched && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      $('result-card').classList.add('achievement-pop');
+      const colours = ['#16834b', '#f5c84c', '#57bd89', '#ffffff'];
+      for (let i = 0; i < 24; i++) {
+        const piece = document.createElement('i');
+        piece.style.setProperty('--x', `${Math.random() * 100}%`);
+        piece.style.setProperty('--drift', `${Math.random() * 100 - 50}px`);
+        piece.style.setProperty('--delay', `${Math.random() * 0.3}s`);
+        piece.style.background = colours[i % colours.length];
+        $('achievement-confetti').append(piece);
+      }
+      celebrationTimer = setTimeout(() => {
+        $('achievement-confetti').replaceChildren();
+        $('result-card').classList.remove('achievement-pop');
+      }, 2200);
+    }
   }
 
   function showPhoto() {
@@ -141,7 +167,7 @@
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Recognition failed. Please retry.');
       if (disposed || signal.aborted) return;
-      feedback(result.status === 'match' ? `Correct — ${expected}!` : result.status === 'different_sign' ? `Not quite — we detected ${result.detected_letter}.` : 'We’re not sure yet.', result.feedback, result.status);
+      feedback(result.status === 'match' ? 'Well done!' : result.status === 'different_sign' ? `Not quite — we detected ${result.detected_letter}.` : 'We’re not sure yet.', result.status === 'match' ? `You signed ${expected} — beautifully done. Ready for your next letter?` : result.feedback, result.status);
       $('detected').textContent = result.detected_letter ? `${result.status === 'uncertain' ? 'Best guess' : 'Detected'}: ${result.detected_letter}` : 'No letter detected';
       if (result.status === 'match') {
         scores[expected] = true;

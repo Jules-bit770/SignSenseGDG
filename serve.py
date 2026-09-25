@@ -1,4 +1,4 @@
-"""Local server for the SignSense MVP. Run: py serve.py"""
+"""Local server for the SignSense MVP. Prefer: python start_letters.py"""
 
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -91,6 +91,13 @@ class SignSenseHandler(SimpleHTTPRequestHandler):
             self.respond(200, dict(result, expected_letter=expected, model_version='letters_three_signers'))
         except (ValueError, TypeError) as exc:
             self.respond(400, {'error': str(exc)})
+        except ImportError as exc:
+            import traceback
+            traceback.print_exc()
+            package = getattr(exc, 'name', None) or 'a recognition dependency'
+            self.respond(503, {'error': f'Recognition cannot load {package} in this Python environment. '
+                                       'Stop the server and run python start_letters.py from SignSenseGDG.',
+                               'reason_code': 'missing_dependency'})
         except Exception:
             import traceback
             traceback.print_exc()
@@ -132,6 +139,7 @@ if __name__ == "__main__":
     DYNAMIC_SIGNS_DIR.mkdir(exist_ok=True)
     server = ThreadingHTTPServer(("127.0.0.1", 8000), SignSenseHandler)
     print("SignSense running at http://localhost:8000/")
+    print(f"Python environment: {sys.executable}")
     print(f"Dynamic reference folder: {DYNAMIC_SIGNS_DIR}")
     try:
         server.serve_forever()

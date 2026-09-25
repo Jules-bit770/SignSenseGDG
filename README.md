@@ -3,7 +3,7 @@
 ## Run the app
 
 ```powershell
-py serve.py
+python start_letters.py
 ```
 
 Open `http://localhost:8000`, sign in or create a local demo account, then open
@@ -20,10 +20,22 @@ cd C:\Users\mathu\Modeltraining
 python -m pip install -r requirements.txt
 cd C:\Users\mathu\SignSenseGDG
 $env:SIGNSENSE_MODEL_REPO = 'C:\Users\mathu\Modeltraining'
-python serve.py
+python start_letters.py
 ```
 
 Open http://localhost:8000, then select **Letter island** on the learning map.
+
+The launcher checks the current interpreter, repository virtual environments,
+and nearby Miniconda/Anaconda installations for the recognition packages. This
+avoids starting the website in a Python environment without TensorFlow. To
+select an environment explicitly, set `SIGNSENSE_PYTHON` to its full Python
+executable path. Stop an existing server with Ctrl+C before restarting.
+
+For this computer, a direct alternative is:
+
+```powershell
+& 'C:\Users\mathu\miniconda3\python.exe' serve.py
+```
 Start the camera, copy the displayed photo, and select **Check my sign**.
 After a three-second countdown, hold/perform the letter for about three seconds.
 Keep shoulders and signing hands visible. The first check loads the model and
