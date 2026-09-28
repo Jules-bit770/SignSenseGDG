@@ -82,7 +82,7 @@ class SignSenseHandler(SimpleHTTPRequestHandler):
             expected = body.get('letter')
             if expected not in {item['letter'] for item in letter_catalog()['letters']}:
                 raise ValueError('Choose a letter from the exercise.')
-            from letter_predictor import LetterPredictor, InvalidAttempt
+            from letter_predictor import LetterPredictor, InvalidAttempt  # type: ignore[import-not-found]
             if PREDICTOR is None:
                 PREDICTOR = LetterPredictor(MODEL_REPO / 'models/letters_three_signers',
                                            MODEL_REPO / 'models/holistic_landmarker.task',
