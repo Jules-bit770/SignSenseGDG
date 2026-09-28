@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc",
-    "pretest": "tsc",
+    "bundle": "esbuild src/services/dtw/index.ts --bundle --format=iife --global-name=SignSenseDtw --footer:js=\"if (typeof module !== 'undefined' && module.exports) { module.exports = SignSenseDtw; } if (typeof window !== 'undefined') { window.SignSenseDtw = SignSenseDtw; }\" --outfile=\"SignSense/Main files/dtw_siformer.js\"",
+    "build": "tsc && npm run bundle",
+    "pretest": "npm run build",
     "test": "node --test dist/__tests__/*.test.js tests/*.test.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "@types/node": "^22.10.1"
+    "@types/node": "^22.10.1",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.7.2"
   }
 }

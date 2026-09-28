@@ -104,6 +104,20 @@ function processCameraResult(results) {
   previousFrame = currentFrame;
 }
 
+function compareGesture(candidate) {
+  const trimmed = trimToGesture(candidate);
+  if (!isUsableGesture(trimmed) || !referenceTemplate) return null;
+  const normalDistance = dtwDistance(trimmed, referenceTemplate);
+  const mirroredDistance = dtwDistance(mirrorGesture(trimmed), referenceTemplate);
+  const bestDistance = Math.min(normalDistance, mirroredDistance);
+  const confidence = confidenceFromDistance(bestDistance);
+  const diagnostic = `${signs[signIndex]} · user ${trimmed.length}f / ref ${referenceTemplate.length}f · normal ${normalDistance.toFixed(3)} · mirrored ${mirroredDistance.toFixed(3)} · best ${bestDistance.toFixed(3)}`;
+  console.info(`[DTW] ${diagnostic} · confidence ${confidence}%`);
+  const debugEl = $('dtw-debug');
+  if (debugEl) debugEl.textContent = diagnostic;
+  return confidence;
+}
+
 function finishDetectedGesture() {
   const tailToRemove = Math.max(0, quietFrameCount - 2);
   const completed = tailToRemove ? gestureFrames.slice(0, -tailToRemove) : gestureFrames.slice();
