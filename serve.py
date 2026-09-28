@@ -55,20 +55,27 @@ class SignSenseHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         global PREDICTOR
-        if self.path != '/api/letter-attempt':
-            self.respond(404, {'error': 'Unknown endpoint.'})
-            return
-        origin = self.headers.get('Origin')
-        if origin and urlsplit(origin).netloc != self.headers.get('Host'):
-            self.respond(403, {'error': 'Use the exercise from this server.'})
-            return
-        if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
-            self.respond(415, {'error': 'Expected application/json.'})
-            return
         try:
             length = int(self.headers.get('Content-Length', '0'))
         except ValueError:
             length = 0
+
+        if self.path != '/api/letter-attempt':
+            if 0 < length <= MAX_UPLOAD:
+                self.rfile.read(length)
+            self.respond(404, {'error': 'Unknown endpoint.'})
+            return
+        origin = self.headers.get('Origin')
+        if origin and urlsplit(origin).netloc != self.headers.get('Host'):
+            if 0 < length <= MAX_UPLOAD:
+                self.rfile.read(length)
+            self.respond(403, {'error': 'Use the exercise from this server.'})
+            return
+        if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
+            if 0 < length <= MAX_UPLOAD:
+                self.rfile.read(length)
+            self.respond(415, {'error': 'Expected application/json.'})
+            return
         if not 0 < length <= MAX_UPLOAD:
             self.respond(413, {'error': 'Attempt is empty or exceeds the 12 MB limit.'})
             return
