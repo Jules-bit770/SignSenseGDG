@@ -1,0 +1,16 @@
+{
+  "name": "signsense-dtw",
+  "version": "1.0.0",
+  "description": "Production-grade Derivative Dynamic Time Warping (DDTW) gesture recognition engine for SignSense",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "pretest": "tsc",
+    "test": "node --test dist/__tests__/*.test.js tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.1"
+  }
+}
