@@ -21,7 +21,12 @@ LETTER_DIR = DYNAMIC_SIGNS_DIR.parent / 'letter_signs'
 
 
 def letter_catalog():
-    config = json.loads((MODEL_REPO / 'models/letters_three_signers/inference_config.json').read_text())
+    # Reference photos must also work on a frontend-only checkout. Recognition
+    # still loads its real model/config separately when an attempt is submitted.
+    try:
+        config = json.loads((MODEL_REPO / 'models/letters_three_signers/inference_config.json').read_text())
+    except FileNotFoundError:
+        config = {'class_names': list('ABCDEFGIKLMNOPQRSTUVWXYZ'), 'window_seconds': 3.0}
     references = {}
     for path in sorted(LETTER_DIR.glob('reference_*.jpg')):
         match = re.fullmatch(r'reference_([A-Z])_\1_\d+\.jpg', path.name)

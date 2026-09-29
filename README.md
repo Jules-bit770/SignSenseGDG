@@ -9,6 +9,17 @@ python start_letters.py
 Open `http://localhost:8000`, sign in or create a local demo account, then open
 **Exercise 1: Dynamic Sign Practice**.
 
+### Preview letter reference photos without the model
+
+From the frontend repository root, run `python serve.py` and open
+`http://localhost:8000`. Letter reference photos are included in Git and load
+even when the separate model repository or its model files are absent.
+Use this Python server rather than Live Server or opening the HTML directly:
+the letter exercise requests its photo list from `/api/letters`.
+Checking a sign still requires the recognition setup below. Model files are
+ignored by Git in Modeltraining and must be obtained separately; pulling the
+repositories does not download them.
+
 ## Letter island (trained model)
 
 Keep this repository beside `Modeltraining`, or set `SIGNSENSE_MODEL_REPO` to

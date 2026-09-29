@@ -33,12 +33,15 @@ class TestLabelFormatting(unittest.TestCase):
 class TestLetterCatalogUnit(unittest.TestCase):
     """Unit tests for letter catalog discovery and config error handling."""
 
-    def test_catalog_missing_config_raises(self):
+    def test_catalog_missing_config_still_lists_photos(self):
         original_repo = serve.MODEL_REPO
         try:
             serve.MODEL_REPO = Path("/nonexistent/model/path")
-            with self.assertRaises(OSError):
-                serve.letter_catalog()
+            catalog = serve.letter_catalog()
+            self.assertGreater(len(catalog['letters']), 0)
+            self.assertEqual(catalog['window_seconds'], 3.0)
+            self.assertNotIn('H', [item['letter'] for item in catalog['letters']])
+            self.assertNotIn('J', [item['letter'] for item in catalog['letters']])
         finally:
             serve.MODEL_REPO = original_repo
 
@@ -155,14 +158,20 @@ class TestServerEndpoints(unittest.TestCase):
 
     # --- Letters API ---
 
-    def test_letters_endpoint_missing_model_config_returns_503(self):
+    def test_letters_without_model_config_serves_every_reference_photo(self):
         original_repo = serve.MODEL_REPO
         try:
             serve.MODEL_REPO = Path("/nonexistent/repo")
             status, data, _ = self.make_request("/api/letters")
-            self.assertEqual(status, 503)
-            self.assertIn("error", data)
-            self.assertIn("missing", data["error"].lower())
+            self.assertEqual(status, 200)
+            self.assertGreater(len(data['letters']), 0)
+            for item in data['letters']:
+                for url in item['images']:
+                    with self.subTest(url=url):
+                        photo_status, photo, headers = self.make_request(url)
+                        self.assertEqual(photo_status, 200)
+                        self.assertEqual(headers.get('Content-Type'), 'image/jpeg')
+                        self.assertTrue(photo.startswith((b'\xff\xd8', b'\x89PNG\r\n\x1a\n')))
         finally:
             serve.MODEL_REPO = original_repo
 
