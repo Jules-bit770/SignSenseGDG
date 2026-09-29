@@ -62,7 +62,8 @@
   }
 
   function showPhoto() {
-    $('reference-image').src = current().images[photoIndex];
+    const image = current().images[photoIndex];
+    $('reference-image').src = image.startsWith('/assets/') ? SignSenseApi.url(image) : image;
     $('reference-image').alt = `Auslan reference for letter ${current().letter}`;
     $('reference-image').hidden = false;
     $('reference-placeholder').hidden = true;
@@ -163,7 +164,7 @@
       $('camera-state').textContent = 'Checking your sign';
       feedback('Checking your sign…', 'The first check can take longer while recognition starts.');
       timeout = setTimeout(() => controller?.abort(), 120000);
-      const response = await fetch('/api/letter-attempt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ letter: expected, frames }), signal });
+      const response = await fetch(SignSenseApi.url('/api/letter-attempt'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ letter: expected, frames }), signal });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Recognition failed. Please retry.');
       if (disposed || signal.aborted) return;
@@ -206,7 +207,7 @@
   });
   window.addEventListener('pagehide', () => { disposed = true; controller?.abort(); stopCamera(); });
   window.addEventListener('pageshow', () => { disposed = false; });
-  fetch('/api/letters', { signal: AbortSignal.timeout(15000) }).then(async response => {
+  fetch(SignSenseApi.url('/api/letters'), { signal: AbortSignal.timeout(15000) }).then(async response => {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);
     if (!result.letters?.length) throw new Error('No supported reference photos were found.');
