@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir -r /opt/model/requirements.txt
 
 WORKDIR /app
 COPY api_server.py /app/api_server.py
-COPY "SignSense/Main files/letter_signs" /app/letter_signs
+COPY ["SignSense/Main files/letter_signs", "/app/letter_signs"]
 ENV SIGNSENSE_MODEL_REPO=/opt/model
 ENV PYTHONUNBUFFERED=1
 CMD ["python", "api_server.py"]
