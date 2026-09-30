@@ -1,3 +1,3 @@
-// Leave blank for local development. Set this to the Cloud Run URL before
-// deploying the frontend, for example: https://signsense-api-xxxxx.a.run.app
-window.SIGNSENSE_API_BASE = '';
+// Leave blank for local development. The hosted frontend uses Cloud Run for
+// the TensorFlow/MediaPipe letter-recognition API.
+window.SIGNSENSE_API_BASE = 'https://signsense-api-222535336822.australia-southeast1.run.app';
