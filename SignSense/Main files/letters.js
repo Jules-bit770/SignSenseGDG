@@ -168,7 +168,7 @@
       if (!response.ok) throw new Error(result.error || 'Recognition failed. Please retry.');
       if (disposed || signal.aborted) return;
       feedback(result.status === 'match' ? 'Well done!' : result.status === 'different_sign' ? `Not quite — we detected ${result.detected_letter}.` : 'We’re not sure yet.', result.status === 'match' ? `You signed ${expected} — beautifully done. Ready for your next letter?` : result.feedback, result.status);
-      $('detected').textContent = result.detected_letter ? `${result.status === 'uncertain' ? 'Best guess' : 'Detected'}: ${result.detected_letter}` : 'No letter detected';
+      $('detected').textContent = result.status !== 'uncertain' && result.detected_letter ? `Detected: ${result.detected_letter}` : 'No letter detected';
       if (result.status === 'match') {
         scores[expected] = true;
         SignSenseProgress.save('letters', scores);

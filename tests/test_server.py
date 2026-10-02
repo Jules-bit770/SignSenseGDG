@@ -49,7 +49,7 @@ class TestLetterCatalogUnit(unittest.TestCase):
         original_repo = serve.MODEL_REPO
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            model_dir = temp_path / "models" / "letters_three_signers"
+            model_dir = temp_path / "models" / "letters_three_signers_mirrored"
             model_dir.mkdir(parents=True, exist_ok=True)
             config_file = model_dir / "inference_config.json"
             config_file.write_text(json.dumps({
@@ -61,7 +61,7 @@ class TestLetterCatalogUnit(unittest.TestCase):
                 catalog = serve.letter_catalog()
                 self.assertIn("letters", catalog)
                 self.assertEqual(catalog["window_seconds"], 3.0)
-                self.assertEqual(catalog["model_version"], "letters_three_signers")
+                self.assertEqual(catalog["model_version"], "letters_three_signers_mirrored")
                 # Letters returned must be intersection of class_names and available images
                 found_letters = [item["letter"] for item in catalog["letters"]]
                 for letter in found_letters:
