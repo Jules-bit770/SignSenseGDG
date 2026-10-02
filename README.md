@@ -27,10 +27,10 @@ the full path of that repository. Run the server with the Python environment
 that has the model dependencies installed:
 
 ```powershell
-cd C:\Users\mathu\Modeltraining
+cd filepath_of_Modeltraining_repo
 python -m pip install -r requirements.txt
-cd C:\Users\mathu\SignSenseGDG
-$env:SIGNSENSE_MODEL_REPO = 'C:\Users\mathu\Modeltraining'
+cd filepath_of_SignSenseGDG_repo
+$env:SIGNSENSE_MODEL_REPO = 'filepath of Modeltraining repo'
 python start_letters.py
 ```
 
@@ -42,11 +42,6 @@ avoids starting the website in a Python environment without TensorFlow. To
 select an environment explicitly, set `SIGNSENSE_PYTHON` to its full Python
 executable path. Stop an existing server with Ctrl+C before restarting.
 
-For this computer, a direct alternative is:
-
-```powershell
-& 'C:\Users\mathu\miniconda3\python.exe' serve.py
-```
 Start the camera, copy the displayed photo, and select **Check my sign**.
 After a three-second countdown, hold/perform the letter for about three seconds.
 Keep shoulders and signing hands visible. The first check loads the model and
