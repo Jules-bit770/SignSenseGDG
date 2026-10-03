@@ -24,7 +24,7 @@ def letter_catalog():
     # Reference photos must also work on a frontend-only checkout. Recognition
     # still loads its real model/config separately when an attempt is submitted.
     try:
-        config = json.loads((MODEL_REPO / 'models/letters_three_signers_mirrored/inference_config.json').read_text())
+        config = json.loads((MODEL_REPO / 'models/letters_airv_no_r_shape_contact/inference_config.json').read_text())
     except FileNotFoundError:
         config = {'class_names': list('ABCDEFGIKLMNOPQRSTUVWXYZ'), 'window_seconds': 3.0}
     references = {}
@@ -33,7 +33,7 @@ def letter_catalog():
         if match and match[1] in config['class_names']:
             references.setdefault(match[1], []).append('/SignSense/Main%20files/letter_signs/' + quote(path.name))
     return dict(letters=[dict(letter=letter, images=images) for letter, images in references.items()],
-                window_seconds=config['window_seconds'], model_version='letters_three_signers_mirrored')
+                window_seconds=config['window_seconds'], model_version='letters_airv_no_r_shape_contact')
 
 
 def label_from_filename(path: Path) -> str:
@@ -89,11 +89,11 @@ class SignSenseHandler(SimpleHTTPRequestHandler):
                 raise ValueError('Choose a letter from the exercise.')
             from letter_predictor import LetterPredictor, InvalidAttempt
             if PREDICTOR is None:
-                PREDICTOR = LetterPredictor(MODEL_REPO / 'models/letters_three_signers_mirrored',
+                PREDICTOR = LetterPredictor(MODEL_REPO / 'models/letters_airv_no_r_shape_contact',
                                            MODEL_REPO / 'models/holistic_landmarker.task',
                                            float(os.environ.get('SIGNSENSE_LETTER_THRESHOLD', '0.85')))
             result = PREDICTOR.predict(body.get('frames'), expected)
-            self.respond(200, dict(result, expected_letter=expected, model_version='letters_three_signers_mirrored', model_info=PREDICTOR.model_info))
+            self.respond(200, dict(result, expected_letter=expected, model_version='letters_airv_no_r_shape_contact', model_info=PREDICTOR.model_info))
         except (ValueError, TypeError) as exc:
             self.respond(400, {'error': str(exc)})
         except ImportError as exc:
