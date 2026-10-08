@@ -121,6 +121,19 @@ function finishDetectedGesture() {
   quietFrameCount = 0;
 }
 
+// Compare the captured movement with the current reference.  Allow a mirrored
+// version too: a webcam image is mirrored for the learner, and learners may
+// sign with the opposite hand from the person in the reference video.
+function compareGesture(frames) {
+  if (!referenceTemplate) return null;
+  const gesture = trimToGesture(frames);
+  if (!isUsableGesture(gesture)) return null;
+
+  const directDistance = dtwDistance(gesture, referenceTemplate);
+  const mirroredDistance = dtwDistance(mirrorGesture(gesture), referenceTemplate);
+  return confidenceFromDistance(Math.min(directDistance, mirroredDistance));
+}
+
 function showCompletedScore(confidence) {
   const sign = signs[signIndex];
   updateAchievement(confidence, true);

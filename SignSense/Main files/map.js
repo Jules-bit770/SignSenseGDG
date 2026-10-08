@@ -24,7 +24,7 @@ document.getElementById('signout').addEventListener('click', () => sessionStorag
 
 
 // Letter practice has its own progress so existing word scores stay unchanged.
-fetch('/api/letters').then(async response => {
+fetch(SignSenseApi.url('/api/letters')).then(async response => {
   if (!response.ok) throw new Error('Letter service unavailable');
   return response.json();
 }).then(({ letters }) => {
