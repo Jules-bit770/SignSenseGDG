@@ -1,16 +1,21 @@
 const progress = SignSenseProgress.read();
 const totals = [14, 13, 9];
-const titles = ['First connections', 'Stay curious', 'Your people'];
+const titles = ['Meet and greet', 'Stay curious', 'Your people'];
 let achieved = 0, next = 0;
 totals.forEach((total, i) => {
   const count = Math.min(total, Object.values(progress[i + 1] || {}).filter(value => typeof value === 'number' && value > 60).length);
   achieved += count;
   document.querySelector(`[data-count="${i + 1}"]`).textContent = `${count} / ${total}`;
   document.querySelector(`[data-exercise="${i + 1}"]`).classList.toggle('done', count === total);
-  if (!next && count < total) next = i + 1;
+
 });
+next = [3, 1, 2].find(id => !document.querySelector(`[data-exercise="${id}"]`).classList.contains('done')) || 0;
 const percent = Math.round(achieved / 36 * 100);
-document.getElementById('username').textContent = sessionStorage.getItem('loggedInUser') || 'Learner';
+const username = sessionStorage.getItem('loggedInUser') || 'Learner';
+const userChip = document.getElementById('username');
+userChip.textContent = Array.from(username.trim())[0]?.toLocaleUpperCase() || 'L';
+userChip.setAttribute('aria-label', username);
+userChip.title = username;
 document.getElementById('total-progress').textContent = `${achieved} / 36`;
 document.getElementById('progress-percent').textContent = `${percent}%`;
 document.getElementById('progress-ring').style.setProperty('--progress', `${percent}%`);

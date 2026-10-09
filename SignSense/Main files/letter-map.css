@@ -1,7 +1,18 @@
-.map{height:880px}
-.island.one{top:650px}
-.island.two{top:460px}
-.island.three{top:268px}
-.island.letters{top:78px;left:66%;--island:#7450a3}
+.map{height:880px;background:radial-gradient(ellipse at 18% 80%,#eee5f5 0,transparent 38%),radial-gradient(ellipse at 85% 24%,#e0eddc 0,transparent 40%),#f0f5eb;box-shadow:0 12px 32px #23352e08}
+.island.letters{top:650px;left:36%;--island:#7450a3}
+.island.three{top:460px;left:66%}
+.island.one{top:268px;left:40%}
+.island.two{top:78px;left:66%}
 .island.letters .symbol{font-weight:800;letter-spacing:-2px}
-@media(max-width:650px){.map{height:880px}.island.letters{left:66%}}
+.island b{font-size:16px;letter-spacing:-.3px}
+.island-caption{padding:5px 12px;border-radius:20px;background:#ffffffd9;box-shadow:0 2px 8px #23352e08;font-size:11px}
+.map-label{font-size:11px;letter-spacing:2.3px}
+.start-note{left:36%;transform:translateX(-50%);bottom:16px;white-space:nowrap;font-weight:700}
+.journey-tagline{display:inline-block;font-family:Georgia,'Times New Roman',serif;font-size:clamp(22px,3vw,30px);font-style:italic;font-weight:500;letter-spacing:.7px;line-height:1.35;margin-bottom:10px}
+.page-heading{padding:30px;border:1px solid var(--line);box-shadow:0 8px 28px #23352e06}
+.page-heading h1{margin-top:8px}
+.card{box-shadow:0 8px 24px #23352e06}
+@media(max-width:650px){.map{height:880px}.island.letters{left:36%}.island.three,.island.two{left:66%}.island.one{left:40%}.page-heading{padding:22px}.island b{font-size:15px}.island-caption{font-size:10px;padding:4px 8px}.start-note{font-size:9px}}
+
+.user-chip{width:46px;height:46px;padding:0;justify-content:center;flex-shrink:0;border-radius:50%;background:#eaf3ec;color:var(--green);border-color:#cfe2d3;font-size:22px;font-weight:800;line-height:1}
+.user-chip::before{display:none}

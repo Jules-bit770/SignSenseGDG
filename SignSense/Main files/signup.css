@@ -1,5 +1,5 @@
-@import url('ui.css');
-body{min-height:100vh;display:grid;place-items:center;padding:30px 18px;background:url('background.jpg') center center / cover no-repeat fixed}
+@import url('ui.css?v=20261009-soft-colors');
+body{min-height:100vh;display:grid;place-items:center;padding:30px 18px;background:var(--page-background)}
 .auth-card{width:100%;max-width:470px;background:white;border:1px solid var(--line);border-radius:28px;padding:42px;box-shadow:0 20px 80px #23352e0a}
 .auth-brand{display:block;text-decoration:none;font-weight:800;font-size:22px;color:var(--ink);margin-bottom:40px}
 .auth-brand>span{font-size:12px;color:var(--blue);margin-right:6px}
@@ -23,3 +23,13 @@ a{font-weight:600}
 @media(max-width:500px){.auth-card{padding:28px}
 h1{font-size:31px}
 }
+
+.auth-card{max-width:510px;border-radius:32px;box-shadow:0 24px 64px #23352e12;border-top:4px solid var(--green)}
+.auth-brand{margin-bottom:28px}
+.auth-tagline{font-family:Georgia,'Times New Roman',serif;font-size:clamp(21px,4.5vw,27px);font-style:italic;font-weight:500;letter-spacing:.3px;line-height:1.4;text-transform:none;margin-bottom:20px}
+.auth-card h1{font-size:clamp(31px,5vw,38px);line-height:1.2;letter-spacing:-1.2px}
+.auth-card .sub{font-size:15px;line-height:1.75}
+.input-row:has(input){border-radius:14px;transition:border-color .2s,box-shadow .2s}
+.input-row:has(input):focus-within{box-shadow:0 0 0 3px #2458c615}
+
+.auth-brand{display:flex;align-items:center;gap:10px}
